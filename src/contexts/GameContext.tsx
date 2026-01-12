@@ -65,6 +65,31 @@ export function GameProvider({ children }: { children: ReactNode }) {
     };
   }, [room?.id, currentPlayer?.id]);
 
+  // Polling fallback for players in lobby (in case Realtime is disabled)
+  useEffect(() => {
+    if (!room?.id || room.status !== 'waiting') return;
+
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from('players')
+        .select('*')
+        .eq('room_id', room.id)
+        .order('turn_order');
+        
+      if (data) {
+        setPlayers(prev => {
+          // Simple check to avoid unnecessary re-renders
+          if (prev.length !== data.length || JSON.stringify(prev) !== JSON.stringify(data)) {
+            return data;
+          }
+          return prev;
+        });
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [room?.id, room?.status]);
+
   // Subscribe to clues and votes when round changes
   useEffect(() => {
     if (!currentRound?.id) return;
