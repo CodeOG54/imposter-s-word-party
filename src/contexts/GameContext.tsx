@@ -138,6 +138,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const { data: playerData, error: playerError } = await supabase
         .from('players')
         .insert({
+          id: hostId, // Explicitly set ID to match room.host_id
           room_id: roomData.id,
           username: hostName,
           is_imposter: false,
