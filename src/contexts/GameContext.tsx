@@ -70,20 +70,31 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (!room?.id || room.status !== 'waiting') return;
 
     const interval = setInterval(async () => {
-      const { data } = await supabase
+      // Fetch players
+      const { data: playersData } = await supabase
         .from('players')
         .select('*')
         .eq('room_id', room.id)
         .order('turn_order');
         
-      if (data) {
+      if (playersData) {
         setPlayers(prev => {
-          // Simple check to avoid unnecessary re-renders
-          if (prev.length !== data.length || JSON.stringify(prev) !== JSON.stringify(data)) {
-            return data;
+          if (prev.length !== playersData.length || JSON.stringify(prev) !== JSON.stringify(playersData)) {
+            return playersData;
           }
           return prev;
         });
+      }
+
+      // Fetch room status to detect game start
+      const { data: roomData } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('id', room.id)
+        .single();
+      
+      if (roomData && roomData.status !== room.status) {
+        setRoom(roomData);
       }
     }, 2000);
 
@@ -268,12 +279,18 @@ export function GameProvider({ children }: { children: ReactNode }) {
       });
       
       // Update room status
-      await supabase
+      const { error: updateError } = await supabase
         .from('rooms')
         .update({ status: 'role_reveal', current_turn: 0 })
         .eq('id', room.id);
+
+      if (updateError) throw updateError;
+
+      // Manually update local state to trigger navigation immediately for host
+      setRoom(prev => prev ? ({ ...prev, status: 'role_reveal', current_turn: 0 }) : null);
         
     } catch (err: any) {
+      console.error("Start game error:", err);
       setError(err.message);
     }
   };
