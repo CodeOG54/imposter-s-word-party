@@ -22,11 +22,13 @@ export default function Game() {
     currentRound,
     clues,
     votes,
+    isHost,
     submitClue,
     submitVote,
     submitImposterGuess,
     nextRound,
-    leaveRoom
+    leaveRoom,
+    startCluePhase
   } = useGame();
 
   const [phase, setPhase] = useState<GamePhase>('role_reveal');
@@ -59,9 +61,8 @@ export default function Game() {
   }, [currentRound?.id]);
 
   const alivePlayers = players.filter(p => p.is_alive);
-  const currentTurnPlayer = alivePlayers[room?.current_turn || 0];
-  const isMyTurn = currentTurnPlayer?.id === currentPlayer?.id;
   const myClue = clues.find(c => c.player_id === currentPlayer?.id);
+  const hasSubmittedMyClue = !!myClue;
   const myVote = votes.find(v => v.voter_id === currentPlayer?.id);
   const isImposter = currentPlayer?.is_imposter;
 
@@ -109,7 +110,7 @@ export default function Game() {
               <RoleRevealCard
                 isImposter={currentPlayer?.is_imposter || false}
                 word={currentPlayer?.word || undefined}
-                hint={currentRound?.hint || undefined}
+                hint={undefined}
                 onContinue={() => setHasRevealedRole(true)}
               />
             ) : (
@@ -121,10 +122,15 @@ export default function Game() {
                 <div className="animate-pulse-glow inline-block p-6 rounded-full bg-primary/10 mb-4">
                   <Clock className="w-12 h-12 text-primary" />
                 </div>
-                <h2 className="font-display text-xl mb-2">Waiting for others...</h2>
-                <p className="text-muted-foreground">
-                  {players.length - 1} player(s) still revealing
+                <h2 className="font-display text-xl mb-2">Role Revealed!</h2>
+                <p className="text-muted-foreground mb-4">
+                  Waiting for host to start clue phase...
                 </p>
+                {isHost && (
+                  <Button variant="hero" size="lg" onClick={startCluePhase}>
+                    Start Clue Phase
+                  </Button>
+                )}
               </motion.div>
             )}
           </div>
@@ -142,43 +148,44 @@ export default function Game() {
               <p className="text-muted-foreground">Give a subtle clue about the word!</p>
             </motion.div>
 
-            {/* Current turn indicator */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className={cn(
-                "game-card text-center",
-                isMyTurn && "border-primary glow-primary"
-              )}
-            >
-              {isMyTurn ? (
-                <>
-                  <p className="text-primary font-semibold mb-2">YOUR TURN!</p>
-                  <TimerBar duration={30} onComplete={handleSubmitClue} />
-                  <div className="flex gap-2 mt-4">
-                    <Input
-                      placeholder="Enter your clue..."
-                      value={clueInput}
-                      onChange={(e) => setClueInput(e.target.value)}
-                      maxLength={30}
-                      disabled={hasSubmittedClue}
-                      autoFocus
-                    />
-                    <Button 
-                      onClick={handleSubmitClue}
-                      disabled={!clueInput.trim() || hasSubmittedClue}
-                    >
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <p className="text-muted-foreground mb-1">Current turn:</p>
-                  <p className="font-display text-xl text-primary">{currentTurnPlayer?.username}</p>
-                </>
-              )}
-            </motion.div>
+            {/* Clue input */}
+            {!hasSubmittedMyClue ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="game-card text-center border-primary glow-primary"
+              >
+                <p className="text-primary font-semibold mb-2">Enter your clue!</p>
+                <TimerBar duration={30} onComplete={handleSubmitClue} />
+                <div className="flex gap-2 mt-4">
+                  <Input
+                    placeholder="Enter your clue..."
+                    value={clueInput}
+                    onChange={(e) => setClueInput(e.target.value)}
+                    maxLength={30}
+                    disabled={hasSubmittedClue}
+                    autoFocus
+                  />
+                  <Button 
+                    onClick={handleSubmitClue}
+                    disabled={!clueInput.trim() || hasSubmittedClue}
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="game-card text-center"
+              >
+                <p className="text-muted-foreground mb-2">Waiting for others...</p>
+                <p className="text-sm text-primary">
+                  {clues.length} / {alivePlayers.length} clues submitted
+                </p>
+              </motion.div>
+            )}
 
             {/* Submitted clues */}
             {clues.length > 0 && (
@@ -400,7 +407,7 @@ export default function Game() {
               <p className="text-sm text-muted-foreground mb-3">Scoreboard</p>
               <div className="space-y-2">
                 {players
-                  .sort((a, b) => b.score - a.score)
+                  .sort((a, b) => (b.score || 0) - (a.score || 0))
                   .map((player, index) => (
                     <div 
                       key={player.id}
@@ -419,7 +426,7 @@ export default function Game() {
                           {player.username}
                         </span>
                       </div>
-                      <span className="font-display font-bold">{player.score}</span>
+                      <span className="font-display font-bold">{player.score || 0}</span>
                     </div>
                   ))}
               </div>

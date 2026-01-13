@@ -26,8 +26,8 @@ export interface Player {
   is_imposter: boolean;
   word: string | null;
   is_alive: boolean;
-  score: number;
-  turn_order: number;
+  score?: number;
+  turn_order?: number;
   created_at: string;
 }
 
