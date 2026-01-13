@@ -11,11 +11,13 @@ interface GameContextType {
   votes: Vote[];
   loading: boolean;
   error: string | null;
+  isHost: boolean;
   
   // Actions
   createRoom: (hostName: string, numPlayers: number, numImposters: number, categories: string[], imposterHint: boolean) => Promise<string>;
   joinRoom: (roomCode: string, playerName: string) => Promise<boolean>;
   startGame: () => Promise<void>;
+  startCluePhase: () => Promise<void>;
   submitClue: (clueText: string) => Promise<void>;
   submitVote: (voteForId: string) => Promise<void>;
   submitImposterGuess: (guess: string) => Promise<boolean>;
@@ -65,9 +67,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
     };
   }, [room?.id, currentPlayer?.id]);
 
-  // Polling fallback for players in lobby (in case Realtime is disabled)
+  // Polling fallback for game state sync
   useEffect(() => {
-    if (!room?.id || room.status !== 'waiting') return;
+    if (!room?.id) return;
 
     const interval = setInterval(async () => {
       // Fetch players
@@ -84,40 +86,76 @@ export function GameProvider({ children }: { children: ReactNode }) {
           }
           return prev;
         });
+        
+        // Update current player data
+        if (currentPlayer) {
+          const updated = playersData.find(p => p.id === currentPlayer.id);
+          if (updated && JSON.stringify(updated) !== JSON.stringify(currentPlayer)) {
+            setCurrentPlayer(updated);
+          }
+        }
       }
 
-      // Fetch room status to detect game start
+      // Fetch room status
       const { data: roomData } = await supabase
         .from('rooms')
         .select('*')
         .eq('id', room.id)
         .single();
       
-      if (roomData && roomData.status !== room.status) {
+      if (roomData && JSON.stringify(roomData) !== JSON.stringify(room)) {
         setRoom(roomData);
       }
-    }, 2000);
+
+      // Fetch current round
+      const { data: roundData } = await supabase
+        .from('rounds')
+        .select('*')
+        .eq('room_id', room.id)
+        .order('round_number', { ascending: false })
+        .limit(1);
+      
+      if (roundData?.[0] && (!currentRound || roundData[0].id !== currentRound.id)) {
+        setCurrentRound(roundData[0]);
+      }
+    }, 1500);
 
     return () => clearInterval(interval);
-  }, [room?.id, room?.status]);
+  }, [room?.id, room?.status, currentPlayer?.id, currentRound?.id]);
 
-  // Subscribe to clues and votes when round changes
+  // Subscribe to clues and votes when round changes + polling fallback
   useEffect(() => {
     if (!currentRound?.id) return;
 
+    // Initial fetch
+    const fetchCluesAndVotes = async () => {
+      const { data: cluesData } = await supabase
+        .from('clues')
+        .select('*')
+        .eq('round_id', currentRound.id)
+        .order('turn_order');
+      if (cluesData) setClues(cluesData);
+
+      const { data: votesData } = await supabase
+        .from('votes')
+        .select('*')
+        .eq('round_id', currentRound.id);
+      if (votesData) setVotes(votesData);
+    };
+
+    fetchCluesAndVotes();
+
+    // Polling for clues and votes
+    const interval = setInterval(fetchCluesAndVotes, 1500);
+
     const roundChannel = supabase
       .channel(`round:${currentRound.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'clues', filter: `round_id=eq.${currentRound.id}` }, async () => {
-        const { data } = await supabase.from('clues').select('*').eq('round_id', currentRound.id).order('turn_order');
-        if (data) setClues(data);
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'votes', filter: `round_id=eq.${currentRound.id}` }, async () => {
-        const { data } = await supabase.from('votes').select('*').eq('round_id', currentRound.id);
-        if (data) setVotes(data);
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clues', filter: `round_id=eq.${currentRound.id}` }, fetchCluesAndVotes)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'votes', filter: `round_id=eq.${currentRound.id}` }, fetchCluesAndVotes)
       .subscribe();
 
     return () => {
+      clearInterval(interval);
       supabase.removeChannel(roundChannel);
     };
   }, [currentRound?.id]);
@@ -153,9 +191,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           room_id: roomData.id,
           username: hostName,
           is_imposter: false,
-          is_alive: true,
-          score: 0,
-          turn_order: 0
+          is_alive: true
         })
         .select()
         .single();
@@ -216,9 +252,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           room_id: roomData.id,
           username: playerName,
           is_imposter: false,
-          is_alive: true,
-          score: 0,
-          turn_order: turnOrder
+          is_alive: true
         })
         .select()
         .single();
@@ -264,8 +298,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           .from('players')
           .update({
             is_imposter: isImposter,
-            word: isImposter ? null : word,
-            turn_order: i
+            word: isImposter ? null : word
           })
           .eq('id', player.id);
       }
@@ -274,20 +307,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
       await supabase.from('rounds').insert({
         room_id: room.id,
         round_number: 1,
-        secret_word: word,
-        hint: room.imposter_hint ? hint : null
+        secret_word: word
       });
       
       // Update room status
       const { error: updateError } = await supabase
         .from('rooms')
-        .update({ status: 'role_reveal', current_turn: 0 })
+        .update({ status: 'role_reveal' })
         .eq('id', room.id);
 
       if (updateError) throw updateError;
 
       // Manually update local state to trigger navigation immediately for host
-      setRoom(prev => prev ? ({ ...prev, status: 'role_reveal', current_turn: 0 }) : null);
+      setRoom(prev => prev ? ({ ...prev, status: 'role_reveal' }) : null);
         
     } catch (err: any) {
       console.error("Start game error:", err);
@@ -296,7 +328,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   };
 
   const submitClue = async (clueText: string) => {
-    if (!currentRound || !currentPlayer) return;
+    if (!currentRound || !currentPlayer || !room) return;
     
     try {
       await supabase.from('clues').insert({
@@ -306,14 +338,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
         turn_order: clues.length
       });
       
-      // Move to next turn or voting phase
+      // Check if all alive players have submitted clues
       const alivePlayers = players.filter(p => p.is_alive);
-      const nextTurn = (room?.current_turn || 0) + 1;
+      const { data: allClues } = await supabase
+        .from('clues')
+        .select('*')
+        .eq('round_id', currentRound.id);
       
-      if (nextTurn >= alivePlayers.length) {
-        await supabase.from('rooms').update({ status: 'voting', current_turn: 0 }).eq('id', room!.id);
-      } else {
-        await supabase.from('rooms').update({ current_turn: nextTurn }).eq('id', room!.id);
+      if ((allClues?.length || 0) >= alivePlayers.length) {
+        // All players submitted, move to voting
+        await supabase.from('rooms').update({ status: 'voting' }).eq('id', room.id);
       }
     } catch (err: any) {
       setError(err.message);
@@ -372,26 +406,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
   };
 
   const submitImposterGuess = async (guess: string): Promise<boolean> => {
-    if (!currentRound) return false;
+    if (!currentRound || !room) return false;
     
     const isCorrect = guess.toLowerCase().trim() === currentRound.secret_word.toLowerCase().trim();
     
-    // Update scores
-    if (isCorrect) {
-      // Imposter wins - give points to imposters
-      const imposters = players.filter(p => p.is_imposter);
-      for (const imp of imposters) {
-        await supabase.from('players').update({ score: imp.score + 3 }).eq('id', imp.id);
-      }
-    } else {
-      // Non-imposters win
-      const nonImposters = players.filter(p => !p.is_imposter);
-      for (const player of nonImposters) {
-        await supabase.from('players').update({ score: player.score + 2 }).eq('id', player.id);
-      }
-    }
-    
-    await supabase.from('rooms').update({ status: 'results' }).eq('id', room!.id);
+    // Note: Score tracking requires adding a 'score' column to players table
+    // For now, just update the room status
+    await supabase.from('rooms').update({ status: 'results' }).eq('id', room.id);
     
     return isCorrect;
   };
@@ -400,7 +421,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (!room || !currentRound) return;
     
     const nextRoundNumber = currentRound.round_number + 1;
-    const { word, hint } = getRandomWord(room.category);
+    const { word } = getRandomWord(room.category);
     
     // Reset all players
     const shuffledPlayers = [...players].sort(() => Math.random() - 0.5);
@@ -416,8 +437,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         .update({
           is_imposter: isImposter,
           word: isImposter ? null : word,
-          is_alive: true,
-          turn_order: i
+          is_alive: true
         })
         .eq('id', player.id);
     }
@@ -426,14 +446,18 @@ export function GameProvider({ children }: { children: ReactNode }) {
     await supabase.from('rounds').insert({
       room_id: room.id,
       round_number: nextRoundNumber,
-      secret_word: word,
-      hint: room.imposter_hint ? hint : null
+      secret_word: word
     });
     
     setClues([]);
     setVotes([]);
     
-    await supabase.from('rooms').update({ status: 'role_reveal', current_turn: 0 }).eq('id', room.id);
+    await supabase.from('rooms').update({ status: 'role_reveal' }).eq('id', room.id);
+  };
+
+  const startCluePhase = async () => {
+    if (!room) return;
+    await supabase.from('rooms').update({ status: 'clue_phase' }).eq('id', room.id);
   };
 
   const leaveRoom = () => {
@@ -447,6 +471,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('roomCode');
   };
 
+  const isHost = room?.host_id === currentPlayer?.id;
+
   return (
     <GameContext.Provider value={{
       room,
@@ -457,9 +483,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
       votes,
       loading,
       error,
+      isHost,
       createRoom,
       joinRoom,
       startGame,
+      startCluePhase,
       submitClue,
       submitVote,
       submitImposterGuess,

@@ -34,17 +34,16 @@ export function RoleRevealCard({ isImposter, word, hint, onContinue }: RoleRevea
 
       {/* Flip Card */}
       <div 
-        className="flip-card w-full aspect-[3/4] cursor-pointer"
+        className="w-full aspect-[3/4] cursor-pointer perspective-1000"
         onClick={handleFlip}
+        style={{ perspective: '1000px' }}
       >
-        <div className={cn(
-          "flip-card-inner w-full h-full relative",
-          isFlipped && "flipped"
-        )}
-        style={{
-          transformStyle: 'preserve-3d',
-          transition: 'transform 0.8s'
-        }}
+        <motion.div 
+          className="w-full h-full relative"
+          initial={false}
+          animate={{ rotateY: isFlipped ? 180 : 0 }}
+          transition={{ duration: 0.8, ease: "easeInOut" }}
+          style={{ transformStyle: 'preserve-3d' }}
         >
           {/* Card Back */}
           <div 
@@ -130,7 +129,7 @@ export function RoleRevealCard({ isImposter, word, hint, onContinue }: RoleRevea
               )}
             </AnimatePresence>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Continue Button */}
