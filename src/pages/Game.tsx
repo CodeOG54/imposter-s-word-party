@@ -466,7 +466,9 @@ export default function Game() {
     }
   };
 
-  if (!room || !currentPlayer) {
+  const { loading } = useGame();
+
+  if (loading || !room || !currentPlayer) {
     return (
       <div className="min-h-screen animated-bg flex items-center justify-center">
         <div className="text-center">
