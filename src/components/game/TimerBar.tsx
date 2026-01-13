@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -11,12 +11,21 @@ interface TimerBarProps {
 
 export function TimerBar({ duration, onComplete, paused = false, className }: TimerBarProps) {
   const [timeLeft, setTimeLeft] = useState(duration);
-  const percentage = (timeLeft / duration) * 100;
+  const onCompleteRef = useRef(onComplete);
+  const hasCompletedRef = useRef(false);
+  
+  // Keep callback ref updated
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
+  // Reset timer when duration changes
   useEffect(() => {
     setTimeLeft(duration);
+    hasCompletedRef.current = false;
   }, [duration]);
 
+  // Timer countdown effect - stable dependencies
   useEffect(() => {
     if (paused || timeLeft <= 0) return;
 
@@ -24,7 +33,10 @@ export function TimerBar({ duration, onComplete, paused = false, className }: Ti
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          onComplete?.();
+          if (!hasCompletedRef.current) {
+            hasCompletedRef.current = true;
+            onCompleteRef.current?.();
+          }
           return 0;
         }
         return prev - 1;
@@ -32,7 +44,9 @@ export function TimerBar({ duration, onComplete, paused = false, className }: Ti
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [paused, onComplete, timeLeft]);
+  }, [paused, timeLeft <= 0]); // Only depend on paused and whether time is up
+
+  const percentage = (timeLeft / duration) * 100;
 
   const getColor = () => {
     if (percentage > 50) return 'bg-primary';

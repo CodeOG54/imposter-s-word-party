@@ -36,6 +36,81 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [votes, setVotes] = useState<Vote[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionRestored, setSessionRestored] = useState(false);
+
+  // Restore session on mount
+  useEffect(() => {
+    const restoreSession = async () => {
+      const playerId = localStorage.getItem('playerId');
+      const roomCode = localStorage.getItem('roomCode');
+      
+      if (!playerId || !roomCode) {
+        setSessionRestored(true);
+        return;
+      }
+
+      try {
+        // Fetch player
+        const { data: playerData, error: playerError } = await supabase
+          .from('players')
+          .select('*')
+          .eq('id', playerId)
+          .single();
+
+        if (playerError || !playerData) {
+          // Player not found, clear localStorage
+          localStorage.removeItem('playerId');
+          localStorage.removeItem('roomCode');
+          setSessionRestored(true);
+          return;
+        }
+
+        // Fetch room
+        const { data: roomData, error: roomError } = await supabase
+          .from('rooms')
+          .select('*')
+          .eq('id', playerData.room_id)
+          .single();
+
+        if (roomError || !roomData) {
+          localStorage.removeItem('playerId');
+          localStorage.removeItem('roomCode');
+          setSessionRestored(true);
+          return;
+        }
+
+        // Fetch all players in room
+        const { data: playersData } = await supabase
+          .from('players')
+          .select('*')
+          .eq('room_id', roomData.id)
+          .order('turn_order');
+
+        // Fetch current round
+        const { data: roundData } = await supabase
+          .from('rounds')
+          .select('*')
+          .eq('room_id', roomData.id)
+          .order('round_number', { ascending: false })
+          .limit(1);
+
+        setRoom(roomData);
+        setCurrentPlayer(playerData);
+        setPlayers(playersData || []);
+        if (roundData?.[0]) {
+          setCurrentRound(roundData[0]);
+        }
+      } catch (err) {
+        console.error('Session restore error:', err);
+        localStorage.removeItem('playerId');
+        localStorage.removeItem('roomCode');
+      } finally {
+        setSessionRestored(true);
+      }
+    };
+
+    restoreSession();
+  }, []);
 
   // Subscribe to room changes
   useEffect(() => {
@@ -481,7 +556,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       currentRound,
       clues,
       votes,
-      loading,
+      loading: loading || !sessionRestored,
       error,
       isHost,
       createRoom,
