@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Skull, User } from 'lucide-react';
+import { MessageCircleQuestion, Users, Sparkles } from 'lucide-react';
 
 interface GameLogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -52,7 +52,7 @@ export function GameLogo({ size = 'lg', animate = true }: GameLogoProps) {
               } : false}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             >
-              <Eye className="w-10 h-10 md:w-14 md:h-14 text-primary" />
+              <MessageCircleQuestion className="w-10 h-10 md:w-14 md:h-14 text-primary" />
             </motion.div>
           </div>
           
@@ -63,10 +63,10 @@ export function GameLogo({ size = 'lg', animate = true }: GameLogoProps) {
             className="absolute inset-0"
           >
             <div className="absolute -top-1 left-1/2 -translate-x-1/2">
-              <Skull className="w-5 h-5 text-accent" />
+              <Sparkles className="w-5 h-5 text-accent" />
             </div>
             <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
-              <User className="w-5 h-5 text-primary" />
+              <Users className="w-5 h-5 text-primary" />
             </div>
           </motion.div>
         </div>
