@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Clock, Vote, Trophy, ArrowRight, RotateCcw, Home } from 'lucide-react';
+import { Send, Clock, Vote, Trophy, ArrowRight, RotateCcw, Home, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PlayerCard } from '@/components/game/PlayerCard';
@@ -9,6 +9,13 @@ import { RoleRevealCard } from '@/components/game/RoleRevealCard';
 import { TimerBar } from '@/components/game/TimerBar';
 import { useGame } from '@/contexts/GameContext';
 import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 type GamePhase = 'role_reveal' | 'clue_phase' | 'voting' | 'imposter_guess' | 'results';
 
@@ -28,7 +35,9 @@ export default function Game() {
     submitImposterGuess,
     nextRound,
     leaveRoom,
-    startCluePhase
+    startCluePhase,
+    gameSettings,
+    restartRound
   } = useGame();
 
   const [phase, setPhase] = useState<GamePhase>('role_reveal');
@@ -39,6 +48,7 @@ export default function Game() {
   const [imposterWon, setImposterWon] = useState<boolean | null>(null);
   const [hasSubmittedClue, setHasSubmittedClue] = useState(false);
   const [hasSubmittedVote, setHasSubmittedVote] = useState(false);
+  const [showTimeoutDialog, setShowTimeoutDialog] = useState(false);
 
   // Sync phase with room status
   useEffect(() => {
@@ -137,6 +147,15 @@ export default function Game() {
         );
 
       case 'clue_phase':
+        const clueTimeLimit = gameSettings?.clue_time_limit || 30;
+        
+        const handleClueTimeout = () => {
+          if (!hasSubmittedMyClue && isHost) {
+            // Host sees the timeout dialog
+            setShowTimeoutDialog(true);
+          }
+        };
+        
         return (
           <div className="space-y-6">
             <motion.div
@@ -156,7 +175,16 @@ export default function Game() {
                 className="game-card text-center border-primary glow-primary"
               >
                 <p className="text-primary font-semibold mb-2">Enter your clue!</p>
-                <TimerBar duration={30} onComplete={handleSubmitClue} />
+                <TimerBar 
+                  duration={clueTimeLimit} 
+                  onComplete={() => {
+                    if (clueInput.trim()) {
+                      handleSubmitClue();
+                    } else {
+                      handleClueTimeout();
+                    }
+                  }} 
+                />
                 <div className="flex gap-2 mt-4">
                   <Input
                     placeholder="Enter your clue..."
@@ -213,6 +241,8 @@ export default function Game() {
         );
 
       case 'voting':
+        const voteTimeLimit = gameSettings?.vote_time_limit || 20;
+        
         return (
           <div className="space-y-6">
             <motion.div
@@ -229,7 +259,14 @@ export default function Game() {
 
             {!hasSubmittedVote ? (
               <>
-                <TimerBar duration={20} onComplete={handleSubmitVote} />
+                <TimerBar 
+                  duration={voteTimeLimit} 
+                  onComplete={() => {
+                    if (selectedVote) {
+                      handleSubmitVote();
+                    }
+                  }} 
+                />
                 
                 <div className="space-y-3">
                   {alivePlayers
@@ -484,24 +521,44 @@ export default function Game() {
   return (
     <div className="min-h-screen animated-bg p-4 pb-8">
       <div className="max-w-md mx-auto">
-        {/* Round indicator */}
+        {/* Round indicator - removed role tag to preserve game secrecy */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-6"
+          className="flex items-center justify-center mb-6"
         >
           <span className="text-sm text-muted-foreground">
             Round {currentRound?.round_number || 1}
           </span>
-          <span className={cn(
-            "px-3 py-1 rounded-full text-sm font-medium",
-            isImposter 
-              ? "bg-accent/20 text-accent" 
-              : "bg-primary/20 text-primary"
-          )}>
-            {isImposter ? 'IMPOSTER' : 'INNOCENT'}
-          </span>
         </motion.div>
+        
+        {/* Out of Time Dialog */}
+        <Dialog open={showTimeoutDialog} onOpenChange={setShowTimeoutDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-accent">
+                <AlertTriangle className="w-6 h-6" />
+                Out of Time!
+              </DialogTitle>
+              <DialogDescription>
+                Time ran out before all clues were submitted. The round needs to be restarted.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-center pt-4">
+              <Button
+                variant="hero"
+                size="lg"
+                onClick={async () => {
+                  setShowTimeoutDialog(false);
+                  await restartRound();
+                }}
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Restart Round
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <AnimatePresence mode="wait">
           <motion.div

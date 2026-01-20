@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase, Room, Player, Round, Clue, Vote, generateRoomCode } from '@/lib/supabase';
+import { supabase, Room, Player, Round, Clue, Vote, GameSettings, generateRoomCode } from '@/lib/supabase';
 import { getRandomWord } from '@/lib/words';
 
 interface GameContextType {
@@ -12,9 +12,10 @@ interface GameContextType {
   loading: boolean;
   error: string | null;
   isHost: boolean;
+  gameSettings: GameSettings | null;
   
   // Actions
-  createRoom: (hostName: string, numPlayers: number, numImposters: number, categories: string[], imposterHint: boolean) => Promise<string>;
+  createRoom: (hostName: string, numPlayers: number, numImposters: number, categories: string[], imposterHint: boolean, clueTimeLimit?: number) => Promise<string>;
   joinRoom: (roomCode: string, playerName: string) => Promise<boolean>;
   startGame: () => Promise<void>;
   startCluePhase: () => Promise<void>;
@@ -23,6 +24,7 @@ interface GameContextType {
   submitImposterGuess: (guess: string) => Promise<boolean>;
   nextRound: () => Promise<void>;
   leaveRoom: () => void;
+  restartRound: () => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -37,6 +39,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionRestored, setSessionRestored] = useState(false);
+  const [gameSettings, setGameSettings] = useState<GameSettings | null>(null);
 
   // Restore session on mount
   useEffect(() => {
@@ -99,6 +102,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setPlayers(playersData || []);
         if (roundData?.[0]) {
           setCurrentRound(roundData[0]);
+        }
+        
+        // Fetch game settings
+        const { data: settingsData } = await supabase
+          .from('game_settings')
+          .select('*')
+          .eq('room_id', roomData.id)
+          .single();
+        if (settingsData) {
+          setGameSettings(settingsData);
         }
       } catch (err) {
         console.error('Session restore error:', err);
@@ -235,7 +248,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     };
   }, [currentRound?.id]);
 
-  const createRoom = async (hostName: string, numPlayers: number, numImposters: number, categories: string[], imposterHint: boolean): Promise<string> => {
+  const createRoom = async (hostName: string, numPlayers: number, numImposters: number, categories: string[], imposterHint: boolean, clueTimeLimit: number = 30): Promise<string> => {
     setLoading(true);
     setError(null);
     
@@ -273,13 +286,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
       if (playerError) throw playerError;
 
-      // Create game settings
-      await supabase.from('game_settings').insert({
+      // Create game settings with custom clue time
+      const { data: settingsData } = await supabase.from('game_settings').insert({
         room_id: roomData.id,
-        clue_time_limit: 30,
+        clue_time_limit: clueTimeLimit,
         vote_time_limit: 20,
         max_rounds: 5
-      });
+      }).select().single();
+      
+      if (settingsData) {
+        setGameSettings(settingsData);
+      }
 
       setRoom(roomData);
       setCurrentPlayer(playerData);
@@ -542,8 +559,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setCurrentRound(null);
     setClues([]);
     setVotes([]);
+    setGameSettings(null);
     localStorage.removeItem('playerId');
     localStorage.removeItem('roomCode');
+  };
+
+  const restartRound = async () => {
+    if (!room || !currentRound) return;
+    
+    // Clear clues for current round
+    await supabase.from('clues').delete().eq('round_id', currentRound.id);
+    
+    // Reset room status back to clue_phase
+    await supabase.from('rooms').update({ status: 'clue_phase' }).eq('id', room.id);
+    
+    setClues([]);
   };
 
   const isHost = room?.host_id === currentPlayer?.id;
@@ -559,6 +589,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       loading: loading || !sessionRestored,
       error,
       isHost,
+      gameSettings,
       createRoom,
       joinRoom,
       startGame,
@@ -567,7 +598,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       submitVote,
       submitImposterGuess,
       nextRound,
-      leaveRoom
+      leaveRoom,
+      restartRound
     }}>
       {children}
     </GameContext.Provider>
