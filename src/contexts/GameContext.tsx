@@ -386,20 +386,24 @@ export function GameProvider({ children }: { children: ReactNode }) {
         const player = shuffledPlayers[i];
         const isImposter = imposterIds.includes(player.id);
         
+        // If imposter hint is enabled, give imposters the hint, otherwise null
+        const imposterWord = room.imposter_hint ? hint : null;
+        
         await supabase
           .from('players')
           .update({
             is_imposter: isImposter,
-            word: isImposter ? null : word
+            word: isImposter ? imposterWord : word
           })
           .eq('id', player.id);
       }
       
-      // Create round
+      // Create round with hint stored
       await supabase.from('rounds').insert({
         room_id: room.id,
         round_number: 1,
-        secret_word: word
+        secret_word: word,
+        hint: hint
       });
       
       // Update room status
