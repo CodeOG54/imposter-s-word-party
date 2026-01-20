@@ -68,8 +68,8 @@ export default function Lobby() {
   const isHost = currentPlayer?.id && room?.host_id === currentPlayer.id;
   const canStart = players.length >= 3 && isHost;
 
-  // Show join form if not joined yet
-  if (!hasJoined && !room) {
+  // Show join form if not joined yet (but not for host who already has a room)
+  if (!hasJoined && !currentPlayer) {
     return (
       <div className="min-h-screen animated-bg flex items-center justify-center p-4">
         <motion.div

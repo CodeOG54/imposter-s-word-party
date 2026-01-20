@@ -119,8 +119,8 @@ export default function Game() {
             {!hasRevealedRole ? (
               <RoleRevealCard
                 isImposter={currentPlayer?.is_imposter || false}
-                word={currentPlayer?.word || undefined}
-                hint={undefined}
+                word={currentPlayer?.is_imposter ? undefined : currentPlayer?.word || undefined}
+                hint={currentPlayer?.is_imposter ? currentPlayer?.word || undefined : undefined}
                 onContinue={() => setHasRevealedRole(true)}
               />
             ) : (
