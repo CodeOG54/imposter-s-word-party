@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Clock, Vote, Trophy, ArrowRight, RotateCcw, Home, AlertTriangle } from 'lucide-react';
+import { Send, Clock, Vote, Trophy, RotateCcw, Home, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PlayerCard } from '@/components/game/PlayerCard';
@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-type GamePhase = 'role_reveal' | 'clue_phase' | 'voting' | 'imposter_guess' | 'results';
+type GamePhase = 'role_reveal' | 'clue_phase' | 'voting' | 'results';
 
 export default function Game() {
   const navigate = useNavigate();
@@ -32,7 +32,6 @@ export default function Game() {
     isHost,
     submitClue,
     submitVote,
-    submitImposterGuess,
     nextRound,
     leaveRoom,
     startCluePhase,
@@ -44,11 +43,10 @@ export default function Game() {
   const [hasRevealedRole, setHasRevealedRole] = useState(false);
   const [clueInput, setClueInput] = useState('');
   const [selectedVote, setSelectedVote] = useState<string | null>(null);
-  const [guessInput, setGuessInput] = useState('');
-  const [imposterWon, setImposterWon] = useState<boolean | null>(null);
   const [hasSubmittedClue, setHasSubmittedClue] = useState(false);
   const [hasSubmittedVote, setHasSubmittedVote] = useState(false);
   const [showTimeoutDialog, setShowTimeoutDialog] = useState(false);
+  const [votingTimerKey, setVotingTimerKey] = useState(0); // Key to reset timer for all players
 
   // Sync phase with room status
   useEffect(() => {
@@ -64,12 +62,18 @@ export default function Game() {
       setHasSubmittedVote(false);
       setSelectedVote(null);
       setClueInput('');
-      setGuessInput('');
-      setImposterWon(null);
       setHasRevealedRole(false);
-      setShowTimeoutDialog(false); // Close timeout dialog when round restarts
+      setShowTimeoutDialog(false);
+      setVotingTimerKey(prev => prev + 1); // Reset voting timer for new round
     }
   }, [currentRound?.id]);
+
+  // Reset voting timer when phase changes to voting (sync all players)
+  useEffect(() => {
+    if (phase === 'voting') {
+      setVotingTimerKey(prev => prev + 1);
+    }
+  }, [phase]);
 
   // Close timeout dialog when phase changes (e.g., host restarted)
   useEffect(() => {
@@ -95,12 +99,6 @@ export default function Game() {
     if (!selectedVote) return;
     await submitVote(selectedVote);
     setHasSubmittedVote(true);
-  };
-
-  const handleSubmitGuess = async () => {
-    if (!guessInput.trim()) return;
-    const won = await submitImposterGuess(guessInput.trim());
-    setImposterWon(won);
   };
 
   const handleNextRound = async () => {
@@ -268,6 +266,7 @@ export default function Game() {
             {!hasSubmittedVote ? (
               <>
                 <TimerBar 
+                  key={votingTimerKey}
                   duration={voteTimeLimit} 
                   onComplete={() => {
                     if (selectedVote) {
@@ -323,66 +322,10 @@ export default function Game() {
           </div>
         );
 
-      case 'imposter_guess':
-        return (
-          <div className="space-y-6">
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center"
-            >
-              <h2 className="font-display text-2xl font-bold text-accent mb-2">
-                Imposter's Last Chance!
-              </h2>
-              <p className="text-muted-foreground">
-                {isImposter 
-                  ? "Guess the secret word to win!" 
-                  : "Will the imposter guess correctly?"
-                }
-              </p>
-            </motion.div>
-
-            {isImposter && currentPlayer?.is_alive ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="game-card border-accent glow-accent"
-              >
-                <TimerBar duration={30} onComplete={handleSubmitGuess} />
-                <div className="flex gap-2 mt-4">
-                  <Input
-                    placeholder="Your guess..."
-                    value={guessInput}
-                    onChange={(e) => setGuessInput(e.target.value)}
-                    autoFocus
-                  />
-                  <Button 
-                    variant="imposter"
-                    onClick={handleSubmitGuess}
-                    disabled={!guessInput.trim()}
-                  >
-                    Guess!
-                  </Button>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-12"
-              >
-                <div className="animate-pulse inline-block">
-                  <Clock className="w-16 h-16 text-accent mb-4" />
-                </div>
-                <p className="text-lg">The imposter is thinking...</p>
-              </motion.div>
-            )}
-          </div>
-        );
-
       case 'results':
         const imposters = players.filter(p => p.is_imposter);
-        const innocentsWon = imposterWon === false || imposters.every(i => !i.is_alive);
+        // Innocents win if all imposters are eliminated (not alive)
+        const innocentsWon = imposters.every(i => !i.is_alive);
         
         return (
           <div className="space-y-6">

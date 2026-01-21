@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase, Room, Player, Round, Clue, Vote, GameSettings, generateRoomCode } from '@/lib/supabase';
 import { getRandomWord } from '@/lib/words';
 
@@ -13,6 +13,7 @@ interface GameContextType {
   error: string | null;
   isHost: boolean;
   gameSettings: GameSettings | null;
+  phaseStartTime: number | null;
   
   // Actions
   createRoom: (hostName: string, numPlayers: number, numImposters: number, categories: string[], imposterHint: boolean, clueTimeLimit?: number) => Promise<string>;
@@ -21,7 +22,6 @@ interface GameContextType {
   startCluePhase: () => Promise<void>;
   submitClue: (clueText: string) => Promise<void>;
   submitVote: (voteForId: string) => Promise<void>;
-  submitImposterGuess: (guess: string) => Promise<boolean>;
   nextRound: () => Promise<void>;
   leaveRoom: () => void;
   restartRound: () => Promise<void>;
@@ -484,15 +484,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
           const eliminatedPlayer = players.find(p => p.id === eliminatedId);
           const remainingImposters = players.filter(p => p.is_imposter && p.is_alive && p.id !== eliminatedId);
           
-          if (remainingImposters.length === 0) {
-            // All imposters eliminated - non-imposters win
+          if (remainingImposters.length === 0 || eliminatedPlayer?.is_imposter) {
+            // All imposters eliminated OR an imposter was caught - go to results
             await supabase.from('rooms').update({ status: 'results' }).eq('id', room!.id);
-          } else if (eliminatedPlayer?.is_imposter) {
-            // Continue game with remaining imposter(s)
-            await supabase.from('rooms').update({ status: 'imposter_guess' }).eq('id', room!.id);
           } else {
-            // Non-imposter eliminated, imposter gets to guess
-            await supabase.from('rooms').update({ status: 'imposter_guess' }).eq('id', room!.id);
+            // Non-imposter eliminated, imposter wins
+            await supabase.from('rooms').update({ status: 'results' }).eq('id', room!.id);
           }
         }
       }
@@ -501,17 +498,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const submitImposterGuess = async (guess: string): Promise<boolean> => {
-    if (!currentRound || !room) return false;
-    
-    const isCorrect = guess.toLowerCase().trim() === currentRound.secret_word.toLowerCase().trim();
-    
-    // Note: Score tracking requires adding a 'score' column to players table
-    // For now, just update the room status
-    await supabase.from('rooms').update({ status: 'results' }).eq('id', room.id);
-    
-    return isCorrect;
-  };
+  // Removed submitImposterGuess - no longer used
 
   const nextRound = async () => {
     if (!room || !currentRound) return;
@@ -598,13 +585,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
       error,
       isHost,
       gameSettings,
+      phaseStartTime: null,
       createRoom,
       joinRoom,
       startGame,
       startCluePhase,
       submitClue,
       submitVote,
-      submitImposterGuess,
       nextRound,
       leaveRoom,
       restartRound
