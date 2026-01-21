@@ -57,7 +57,7 @@ export default function Game() {
     }
   }, [room?.status]);
 
-  // Reset states on new round
+  // Reset states on new round or when phase changes
   useEffect(() => {
     if (currentRound) {
       setHasSubmittedClue(false);
@@ -67,8 +67,16 @@ export default function Game() {
       setGuessInput('');
       setImposterWon(null);
       setHasRevealedRole(false);
+      setShowTimeoutDialog(false); // Close timeout dialog when round restarts
     }
   }, [currentRound?.id]);
+
+  // Close timeout dialog when phase changes (e.g., host restarted)
+  useEffect(() => {
+    if (phase === 'clue_phase' && clues.length === 0) {
+      setShowTimeoutDialog(false);
+    }
+  }, [phase, clues.length]);
 
   const alivePlayers = players.filter(p => p.is_alive);
   const myClue = clues.find(c => c.player_id === currentPlayer?.id);
@@ -150,8 +158,8 @@ export default function Game() {
         const clueTimeLimit = gameSettings?.clue_time_limit || 30;
         
         const handleClueTimeout = () => {
-          if (!hasSubmittedMyClue && isHost) {
-            // Host sees the timeout dialog
+          // Show timeout dialog for everyone when time runs out
+          if (!hasSubmittedMyClue) {
             setShowTimeoutDialog(true);
           }
         };
@@ -533,29 +541,44 @@ export default function Game() {
         </motion.div>
         
         {/* Out of Time Dialog */}
-        <Dialog open={showTimeoutDialog} onOpenChange={setShowTimeoutDialog}>
-          <DialogContent className="sm:max-w-md">
+        <Dialog open={showTimeoutDialog} onOpenChange={(open) => {
+          // Only allow closing via the button, not by clicking outside
+          if (!open && isHost) setShowTimeoutDialog(false);
+        }}>
+          <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-accent">
                 <AlertTriangle className="w-6 h-6" />
                 Out of Time!
               </DialogTitle>
               <DialogDescription>
-                Time ran out before all clues were submitted. The round needs to be restarted.
+                {isHost 
+                  ? "Time ran out before all clues were submitted. Restart the round to try again."
+                  : "Time ran out! Waiting for the host to restart the round..."
+                }
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-center pt-4">
-              <Button
-                variant="hero"
-                size="lg"
-                onClick={async () => {
-                  setShowTimeoutDialog(false);
-                  await restartRound();
-                }}
-              >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Restart Round
-              </Button>
+              {isHost ? (
+                <Button
+                  variant="hero"
+                  size="lg"
+                  onClick={async () => {
+                    setShowTimeoutDialog(false);
+                    await restartRound();
+                  }}
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  Restart Round
+                </Button>
+              ) : (
+                <div className="text-center text-muted-foreground">
+                  <div className="animate-pulse mb-2">
+                    <Clock className="w-8 h-8 mx-auto text-primary" />
+                  </div>
+                  <p>Waiting for host...</p>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>

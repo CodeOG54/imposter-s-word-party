@@ -18,23 +18,32 @@ export default function Lobby() {
   const [joining, setJoining] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
 
-  // Check if already in room
+  // Check if already in room - only set hasJoined if player actually exists in DB
   useEffect(() => {
     const checkExistingSession = async () => {
       const storedPlayerId = localStorage.getItem('playerId');
       const storedRoomCode = localStorage.getItem('roomCode');
       
-      if (storedPlayerId && storedRoomCode === roomCode) {
-        // Reconnect to existing session
+      // Only check if stored room matches current room code
+      if (storedPlayerId && storedRoomCode?.toUpperCase() === roomCode?.toUpperCase()) {
+        // Verify the player still exists in the database
         const { data: playerData } = await supabase
           .from('players')
-          .select('*, rooms(*)')
+          .select('*')
           .eq('id', storedPlayerId)
           .single();
           
         if (playerData) {
           setHasJoined(true);
+        } else {
+          // Player doesn't exist in DB anymore, clear localStorage
+          localStorage.removeItem('playerId');
+          localStorage.removeItem('roomCode');
         }
+      } else if (storedRoomCode && storedRoomCode?.toUpperCase() !== roomCode?.toUpperCase()) {
+        // User is joining a different room, clear old session
+        localStorage.removeItem('playerId');
+        localStorage.removeItem('roomCode');
       }
     };
     
@@ -68,8 +77,9 @@ export default function Lobby() {
   const isHost = currentPlayer?.id && room?.host_id === currentPlayer.id;
   const canStart = players.length >= 3 && isHost;
 
-  // Show join form if not joined yet (but not for host who already has a room)
-  if (!hasJoined && !currentPlayer) {
+  // Show join form if user hasn't joined yet
+  // Check hasJoined flag first - this is set when we verify player exists in DB
+  if (!hasJoined) {
     return (
       <div className="min-h-screen animated-bg flex items-center justify-center p-4">
         <motion.div

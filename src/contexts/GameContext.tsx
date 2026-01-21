@@ -517,7 +517,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (!room || !currentRound) return;
     
     const nextRoundNumber = currentRound.round_number + 1;
-    const { word } = getRandomWord(room.category);
+    const { word, hint } = getRandomWord(room.category);
     
     // Reset all players
     const shuffledPlayers = [...players].sort(() => Math.random() - 0.5);
@@ -528,21 +528,25 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const player = shuffledPlayers[i];
       const isImposter = imposterIds.includes(player.id);
       
+      // If imposter hint is enabled, give imposters the hint, otherwise null
+      const imposterWord = room.imposter_hint ? hint : null;
+      
       await supabase
         .from('players')
         .update({
           is_imposter: isImposter,
-          word: isImposter ? null : word,
+          word: isImposter ? imposterWord : word,
           is_alive: true
         })
         .eq('id', player.id);
     }
     
-    // Create new round
+    // Create new round with hint stored
     await supabase.from('rounds').insert({
       room_id: room.id,
       round_number: nextRoundNumber,
-      secret_word: word
+      secret_word: word,
+      hint: hint
     });
     
     setClues([]);
