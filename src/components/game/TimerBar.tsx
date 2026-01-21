@@ -27,24 +27,34 @@ export function TimerBar({ duration, onComplete, paused = false, className }: Ti
 
   // Timer countdown effect - stable dependencies
   useEffect(() => {
-    if (paused || timeLeft <= 0) return;
+    if (paused) return;
+    if (timeLeft <= 0) {
+      // Timer already at zero, trigger callback if not already done
+      if (!hasCompletedRef.current) {
+        hasCompletedRef.current = true;
+        onCompleteRef.current?.();
+      }
+      return;
+    }
 
     const timer = setInterval(() => {
       setTimeLeft(prev => {
-        if (prev <= 1) {
+        const next = prev - 1;
+        if (next <= 0) {
           clearInterval(timer);
           if (!hasCompletedRef.current) {
             hasCompletedRef.current = true;
-            onCompleteRef.current?.();
+            // Use setTimeout to avoid state update during render
+            setTimeout(() => onCompleteRef.current?.(), 0);
           }
           return 0;
         }
-        return prev - 1;
+        return next;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [paused, timeLeft <= 0]); // Only depend on paused and whether time is up
+  }, [paused, duration]); // Depend on paused and duration (timer restarts when duration changes)
 
   const percentage = (timeLeft / duration) * 100;
 
