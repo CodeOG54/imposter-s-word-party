@@ -65,6 +65,15 @@ export interface GameSettings {
   max_rounds: number;
 }
 
+export interface ChatMessage {
+  id: string;
+  room_id: string;
+  player_id: string;
+  username: string;
+  message: string;
+  created_at: string;
+}
+
 // Helper function to generate room code
 export function generateRoomCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
