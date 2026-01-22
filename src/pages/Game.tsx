@@ -46,7 +46,8 @@ export default function Game() {
   const [hasSubmittedClue, setHasSubmittedClue] = useState(false);
   const [hasSubmittedVote, setHasSubmittedVote] = useState(false);
   const [showTimeoutDialog, setShowTimeoutDialog] = useState(false);
-  const [votingTimerKey, setVotingTimerKey] = useState(0); // Key to reset timer for all players
+  const [clueTimerKey, setClueTimerKey] = useState(0); // Key to reset clue timer for all players
+  const [votingTimerKey, setVotingTimerKey] = useState(0); // Key to reset voting timer for all players
 
   // Sync phase with room status
   useEffect(() => {
@@ -68,10 +69,13 @@ export default function Game() {
     }
   }, [currentRound?.id]);
 
-  // Reset voting timer when phase changes to voting (sync all players)
+  // Reset timers when phase changes (sync all players)
   useEffect(() => {
     if (phase === 'voting') {
       setVotingTimerKey(prev => prev + 1);
+    }
+    if (phase === 'clue_phase') {
+      setClueTimerKey(prev => prev + 1);
     }
   }, [phase]);
 
@@ -126,7 +130,7 @@ export default function Game() {
               <RoleRevealCard
                 isImposter={currentPlayer?.is_imposter || false}
                 word={currentPlayer?.is_imposter ? undefined : currentPlayer?.word || undefined}
-                hint={currentPlayer?.is_imposter ? currentPlayer?.word || undefined : undefined}
+                hint={currentPlayer?.is_imposter && currentPlayer?.word ? currentPlayer.word : undefined}
                 onContinue={() => setHasRevealedRole(true)}
               />
             ) : (
@@ -182,6 +186,7 @@ export default function Game() {
               >
                 <p className="text-primary font-semibold mb-2">Enter your clue!</p>
                 <TimerBar 
+                  key={clueTimerKey}
                   duration={clueTimeLimit} 
                   onComplete={() => {
                     if (clueInput.trim()) {

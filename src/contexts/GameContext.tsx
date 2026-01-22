@@ -451,7 +451,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   };
 
   const submitVote = async (voteForId: string) => {
-    if (!currentRound || !currentPlayer) return;
+    if (!currentRound || !currentPlayer || !room) return;
     
     try {
       await supabase.from('votes').insert({
@@ -478,18 +478,28 @@ export function GameProvider({ children }: { children: ReactNode }) {
         const eliminatedId = Object.entries(voteCounts).find(([_, count]) => count === maxVotes)?.[0];
         
         if (eliminatedId) {
+          // Mark player as eliminated
           await supabase.from('players').update({ is_alive: false }).eq('id', eliminatedId);
           
-          // Check if eliminated player was imposter
-          const eliminatedPlayer = players.find(p => p.id === eliminatedId);
-          const remainingImposters = players.filter(p => p.is_imposter && p.is_alive && p.id !== eliminatedId);
+          // Fetch updated players list to check win conditions
+          const { data: updatedPlayers } = await supabase
+            .from('players')
+            .select('*')
+            .eq('room_id', room.id);
           
-          if (remainingImposters.length === 0 || eliminatedPlayer?.is_imposter) {
-            // All imposters eliminated OR an imposter was caught - go to results
-            await supabase.from('rooms').update({ status: 'results' }).eq('id', room!.id);
-          } else {
-            // Non-imposter eliminated, imposter wins
-            await supabase.from('rooms').update({ status: 'results' }).eq('id', room!.id);
+          if (updatedPlayers) {
+            const aliveImposters = updatedPlayers.filter(p => p.is_imposter && p.is_alive);
+            const aliveInnocents = updatedPlayers.filter(p => !p.is_imposter && p.is_alive);
+            
+            // Win conditions:
+            // - Innocents win if all imposters are eliminated
+            // - Imposters win if they equal or outnumber innocents
+            if (aliveImposters.length === 0 || aliveImposters.length >= aliveInnocents.length) {
+              await supabase.from('rooms').update({ status: 'results' }).eq('id', room.id);
+            } else {
+              // Game continues - go to results to show who was eliminated, then next round
+              await supabase.from('rooms').update({ status: 'results' }).eq('id', room.id);
+            }
           }
         }
       }
