@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Send, MessageCircle, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { supabase } from '@/lib/supabase';
-import { cn } from '@/lib/utils';
-import { toast } from '@/hooks/use-toast';
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Send, MessageCircle, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { supabase } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
 
 interface ChatMessage {
   id: string;
@@ -23,9 +22,14 @@ interface GameChatProps {
   players: { id: string; username: string }[];
 }
 
-export function GameChat({ roomId, playerId, playerName, players }: GameChatProps) {
+export function GameChat({
+  roomId,
+  playerId,
+  playerName,
+  players,
+}: GameChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -37,12 +41,12 @@ export function GameChat({ roomId, playerId, playerName, players }: GameChatProp
 
     const fetchMessages = async () => {
       const { data } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .eq('room_id', roomId)
-        .order('created_at', { ascending: true })
+        .from("chat_messages")
+        .select("*")
+        .eq("room_id", roomId)
+        .order("created_at", { ascending: true })
         .limit(100);
-      
+
       if (data) {
         setMessages(data);
         if (data.length === 0) {
@@ -56,19 +60,21 @@ export function GameChat({ roomId, playerId, playerName, players }: GameChatProp
     // Subscribe to new messages
     const channel = supabase
       .channel(`chat:${roomId}`)
-      .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `room_id=eq.${roomId}` },
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "chat_messages",
+          filter: `room_id=eq.${roomId}`,
+        },
         (payload) => {
           const newMsg = payload.new as ChatMessage;
-          setMessages(prev => [...prev, newMsg]);
+          setMessages((prev) => [...prev, newMsg]);
           if (!isOpen && newMsg.player_id !== playerId) {
-            setUnreadCount(prev => prev + 1);
-            toast({
-              title: "New message",
-              description: `${newMsg.username}: ${newMsg.message}`,
-            });
+            setUnreadCount((prev) => prev + 1);
           }
-        }
+        },
       )
       .subscribe();
 
@@ -92,7 +98,7 @@ export function GameChat({ roomId, playerId, playerName, players }: GameChatProp
   // Scroll to bottom when messages change or chat opens
   useEffect(() => {
     if (isOpen) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isOpen]);
 
@@ -100,16 +106,15 @@ export function GameChat({ roomId, playerId, playerName, players }: GameChatProp
     if (!newMessage.trim()) return;
 
     const message = newMessage.trim();
-    setNewMessage('');
+    setNewMessage("");
 
-    await supabase.from('chat_messages').insert({
+    await supabase.from("chat_messages").insert({
       room_id: roomId,
       player_id: playerId,
       username: playerName,
-      message: message
+      message: message,
     });
   };
-
 
   return (
     <>
@@ -125,13 +130,13 @@ export function GameChat({ roomId, playerId, playerName, players }: GameChatProp
           "bg-primary text-primary-foreground shadow-lg",
           "flex items-center justify-center",
           "hover:bg-primary/90 transition-colors",
-          isOpen && "hidden"
+          isOpen && "hidden",
         )}
       >
         <MessageCircle className="w-6 h-6" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 w-6 h-6 bg-accent text-accent-foreground rounded-full text-xs font-bold flex items-center justify-center">
-            {unreadCount > 9 ? '9+' : unreadCount}
+            {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </motion.button>
@@ -143,7 +148,7 @@ export function GameChat({ roomId, playerId, playerName, players }: GameChatProp
             initial={{ opacity: 0, y: 100, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 100, scale: 0.9 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="fixed bottom-4 right-4 z-50 w-80 h-96 bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
@@ -178,7 +183,7 @@ export function GameChat({ roomId, playerId, playerName, players }: GameChatProp
                       "rounded-lg p-2 max-w-[85%]",
                       msg.player_id === playerId
                         ? "bg-primary text-primary-foreground ml-auto"
-                        : "bg-muted"
+                        : "bg-muted",
                     )}
                   >
                     {msg.player_id !== playerId && (
@@ -210,11 +215,7 @@ export function GameChat({ roomId, playerId, playerName, players }: GameChatProp
                   className="flex-1"
                   autoComplete="off"
                 />
-                <Button
-                  type="submit"
-                  size="icon"
-                  disabled={!newMessage.trim()}
-                >
+                <Button type="submit" size="icon" disabled={!newMessage.trim()}>
                   <Send className="w-4 h-4" />
                 </Button>
               </form>

@@ -1,38 +1,49 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Users, Skull, Lightbulb, Play, Check, Clock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useGame } from '@/contexts/GameContext';
-import { getAllCategories } from '@/lib/words';
-import { cn } from '@/lib/utils';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  ArrowLeft,
+  Users,
+  Skull,
+  Lightbulb,
+  Play,
+  Check,
+  Clock,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useGame } from "@/contexts/GameContext";
+import { getAllCategories } from "@/lib/words";
+import { cn } from "@/lib/utils";
 
 export default function CreateGame() {
   const navigate = useNavigate();
   const { createRoom, loading, error } = useGame();
-  
-  const [hostName, setHostName] = useState('');
+
+  const [hostName, setHostName] = useState("");
   const [numPlayers, setNumPlayers] = useState(4);
   const [numImposters, setNumImposters] = useState(1);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(['Objects', 'Places']);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([
+    "Objects",
+    "Places",
+  ]);
   const [imposterHint, setImposterHint] = useState(true);
   const [clueTimeLimit, setClueTimeLimit] = useState(30);
 
   const categories = getAllCategories();
 
   const toggleCategory = (category: string) => {
-    setSelectedCategories(prev => 
-      prev.includes(category) 
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category],
     );
   };
 
   const handleCreate = async () => {
     if (!hostName.trim()) return;
     if (selectedCategories.length === 0) return;
-    
+
     try {
       const roomCode = await createRoom(
         hostName.trim(),
@@ -40,11 +51,11 @@ export default function CreateGame() {
         numImposters,
         selectedCategories,
         imposterHint,
-        clueTimeLimit
+        clueTimeLimit,
       );
       navigate(`/lobby/${roomCode}`);
     } catch (err) {
-      console.error('Failed to create room:', err);
+      console.error("Failed to create room:", err);
     }
   };
 
@@ -57,7 +68,7 @@ export default function CreateGame() {
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-4 mb-8"
         >
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="font-display text-2xl font-bold text-gradient-primary">
@@ -73,7 +84,9 @@ export default function CreateGame() {
             transition={{ delay: 0.1 }}
             className="game-card"
           >
-            <label className="block text-sm text-muted-foreground mb-2">Your Name</label>
+            <label className="block text-sm text-muted-foreground mb-2">
+              Your Name
+            </label>
             <Input
               placeholder="Enter your name"
               value={hostName}
@@ -91,10 +104,12 @@ export default function CreateGame() {
           >
             <div className="flex items-center gap-3 mb-3">
               <Users className="w-5 h-5 text-primary" />
-              <label className="text-sm text-muted-foreground">Expected Players</label>
+              <label className="text-sm text-muted-foreground">
+                Expected Players
+              </label>
             </div>
             <div className="flex gap-2 flex-wrap">
-              {[3, 4, 5, 6, 7, 8, 10, 12].map(num => (
+              {[3, 4, 5, 6, 7, 8, 10, 12].map((num) => (
                 <Button
                   key={num}
                   variant={numPlayers === num ? "default" : "muted"}
@@ -116,10 +131,12 @@ export default function CreateGame() {
           >
             <div className="flex items-center gap-3 mb-3">
               <Skull className="w-5 h-5 text-accent" />
-              <label className="text-sm text-muted-foreground">Number of Imposters</label>
+              <label className="text-sm text-muted-foreground">
+                Number of Imposters
+              </label>
             </div>
             <div className="flex gap-2">
-              {[1, 2, 3].map(num => (
+              {[1, 2, 3].map((num) => (
                 <Button
                   key={num}
                   variant={numImposters === num ? "imposter" : "muted"}
@@ -140,12 +157,16 @@ export default function CreateGame() {
             transition={{ delay: 0.4 }}
             className="game-card"
           >
-            <label className="block text-sm text-muted-foreground mb-3">Word Categories</label>
+            <label className="block text-sm text-muted-foreground mb-3">
+              Word Categories
+            </label>
             <div className="flex gap-2 flex-wrap">
-              {categories.map(category => (
+              {categories.map((category) => (
                 <Button
                   key={category}
-                  variant={selectedCategories.includes(category) ? "default" : "muted"}
+                  variant={
+                    selectedCategories.includes(category) ? "default" : "muted"
+                  }
                   size="sm"
                   onClick={() => toggleCategory(category)}
                   className="relative"
@@ -196,7 +217,12 @@ export default function CreateGame() {
               className="w-full flex items-center justify-between"
             >
               <div className="flex items-center gap-3">
-                <Lightbulb className={cn("w-5 h-5", imposterHint ? "text-warning" : "text-muted-foreground")} />
+                <Lightbulb
+                  className={cn(
+                    "w-5 h-5",
+                    imposterHint ? "text-warning" : "text-muted-foreground",
+                  )}
+                />
                 <div className="text-left">
                   <p className="font-medium">Imposter Hint</p>
                   <p className="text-sm text-muted-foreground">
@@ -204,14 +230,18 @@ export default function CreateGame() {
                   </p>
                 </div>
               </div>
-              <div className={cn(
-                "w-12 h-7 rounded-full transition-colors relative",
-                imposterHint ? "bg-warning" : "bg-muted"
-              )}>
-                <div className={cn(
-                  "absolute top-1 w-5 h-5 rounded-full bg-foreground transition-transform",
-                  imposterHint ? "translate-x-6" : "translate-x-1"
-                )} />
+              <div
+                className={cn(
+                  "w-12 h-7 rounded-full transition-colors relative",
+                  imposterHint ? "bg-warning" : "bg-muted",
+                )}
+              >
+                <div
+                  className={cn(
+                    "absolute top-1 w-5 h-5 rounded-full bg-foreground transition-transform",
+                    imposterHint ? "translate-x-6" : "translate-x-1",
+                  )}
+                />
               </div>
             </button>
           </motion.div>
@@ -232,10 +262,12 @@ export default function CreateGame() {
               size="xl"
               className="w-full"
               onClick={handleCreate}
-              disabled={loading || !hostName.trim() || selectedCategories.length === 0}
+              disabled={
+                loading || !hostName.trim() || selectedCategories.length === 0
+              }
             >
               <Play className="w-5 h-5" />
-              {loading ? 'Creating...' : 'Create Room'}
+              {loading ? "Creating..." : "Create Room"}
             </Button>
           </motion.div>
         </div>
