@@ -20,6 +20,7 @@ interface GameContextType {
   joinRoom: (roomCode: string, playerName: string) => Promise<boolean>;
   startGame: () => Promise<void>;
   startCluePhase: () => Promise<void>;
+  startVotingPhase: () => Promise<void>;
   submitClue: (clueText: string) => Promise<void>;
   submitVote: (voteForId: string) => Promise<void>;
   nextRound: () => Promise<void>;
@@ -405,6 +406,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
         secret_word: word,
         hint: hint
       });
+
+      // Clear chat messages for the new game
+      await supabase.from('chat_messages').delete().eq('room_id', room.id);
       
       // Update room status
       const { error: updateError } = await supabase
@@ -441,10 +445,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
         .select('*')
         .eq('round_id', currentRound.id);
       
-      if ((allClues?.length || 0) >= alivePlayers.length) {
-        // All players submitted, move to voting
-        await supabase.from('rooms').update({ status: 'voting' }).eq('id', room.id);
-      }
+      // Removed automatic transition to voting
+      // The host will manually trigger the voting phase
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const startVotingPhase = async () => {
+    if (!room) return;
+    try {
+      await supabase.from('rooms').update({ status: 'voting' }).eq('id', room.id);
     } catch (err: any) {
       setError(err.message);
     }
@@ -600,6 +611,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       joinRoom,
       startGame,
       startCluePhase,
+      startVotingPhase,
       submitClue,
       submitVote,
       nextRound,

@@ -35,6 +35,7 @@ export default function Game() {
     nextRound,
     leaveRoom,
     startCluePhase,
+    startVotingPhase,
     gameSettings,
     restartRound
   } = useGame();
@@ -73,9 +74,6 @@ export default function Game() {
   useEffect(() => {
     if (phase === 'voting') {
       setVotingTimerKey(prev => prev + 1);
-    }
-    if (phase === 'clue_phase') {
-      setClueTimerKey(prev => prev + 1);
     }
   }, [phase]);
 
@@ -155,15 +153,6 @@ export default function Game() {
         );
 
       case 'clue_phase':
-        const clueTimeLimit = gameSettings?.clue_time_limit || 30;
-        
-        const handleClueTimeout = () => {
-          // Show timeout dialog for everyone when time runs out
-          if (!hasSubmittedMyClue) {
-            setShowTimeoutDialog(true);
-          }
-        };
-        
         return (
           <div className="space-y-6">
             <motion.div
@@ -183,17 +172,6 @@ export default function Game() {
                 className="game-card text-center border-primary glow-primary"
               >
                 <p className="text-primary font-semibold mb-2">Enter your clue!</p>
-                <TimerBar 
-                  key={clueTimerKey}
-                  duration={clueTimeLimit} 
-                  onComplete={() => {
-                    if (clueInput.trim()) {
-                      handleSubmitClue();
-                    } else {
-                      handleClueTimeout();
-                    }
-                  }} 
-                />
                 <div className="flex gap-2 mt-4">
                   <Input
                     placeholder="Enter your clue..."
@@ -245,6 +223,25 @@ export default function Game() {
                   );
                 })}
               </div>
+            )}
+
+            {/* Host Controls: Proceed to Vote */}
+            {isHost && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex justify-center pt-4"
+              >
+                <Button
+                  variant="hero"
+                  size="lg"
+                  onClick={startVotingPhase}
+                  disabled={clues.length < alivePlayers.length}
+                >
+                  <Vote className="w-4 h-4 mr-2" />
+                  Proceed to Vote
+                </Button>
+              </motion.div>
             )}
 
             {/* Chat for discussion */}
