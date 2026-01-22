@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Clock, Vote, Trophy, RotateCcw, Home, AlertTriangle } from 'lucide-react';
+import { Send, Clock, Vote, RotateCcw, Home, AlertTriangle, Skull } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PlayerCard } from '@/components/game/PlayerCard';
 import { RoleRevealCard } from '@/components/game/RoleRevealCard';
 import { TimerBar } from '@/components/game/TimerBar';
+import { GameChat } from '@/components/game/GameChat';
 import { useGame } from '@/contexts/GameContext';
 import { cn } from '@/lib/utils';
 import {
@@ -21,7 +22,6 @@ type GamePhase = 'role_reveal' | 'clue_phase' | 'voting' | 'results';
 
 export default function Game() {
   const navigate = useNavigate();
-  const { roomCode } = useParams<{ roomCode: string }>();
   const { 
     room, 
     players, 
@@ -89,8 +89,6 @@ export default function Game() {
   const alivePlayers = players.filter(p => p.is_alive);
   const myClue = clues.find(c => c.player_id === currentPlayer?.id);
   const hasSubmittedMyClue = !!myClue;
-  const myVote = votes.find(v => v.voter_id === currentPlayer?.id);
-  const isImposter = currentPlayer?.is_imposter;
 
   const handleSubmitClue = async () => {
     if (!clueInput.trim()) return;
@@ -248,6 +246,16 @@ export default function Game() {
                 })}
               </div>
             )}
+
+            {/* Chat for discussion */}
+            {room && currentPlayer && (
+              <GameChat
+                roomId={room.id}
+                playerId={currentPlayer.id}
+                playerName={currentPlayer.username}
+                players={players}
+              />
+            )}
           </div>
         );
 
@@ -329,100 +337,58 @@ export default function Game() {
 
       case 'results':
         const imposters = players.filter(p => p.is_imposter);
-        // Innocents win if all imposters are eliminated (not alive)
-        const innocentsWon = imposters.every(i => !i.is_alive);
         
         return (
           <div className="space-y-6">
+            {/* Imposter reveal header */}
             <motion.div
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
               className="text-center"
             >
-              <div className={cn(
-                "inline-block p-6 rounded-full mb-4",
-                innocentsWon ? "bg-primary/20 glow-primary" : "bg-accent/20 glow-accent"
-              )}>
-                <Trophy className={cn(
-                  "w-16 h-16",
-                  innocentsWon ? "text-primary" : "text-accent"
-                )} />
+              <div className="inline-block p-6 rounded-full mb-4 bg-accent/20 glow-accent">
+                <Skull className="w-16 h-16 text-accent" />
               </div>
               
-              <h2 className={cn(
-                "font-display text-3xl font-bold mb-2",
-                innocentsWon ? "text-primary glow-text-primary" : "text-accent glow-text-accent"
-              )}>
-                {innocentsWon ? "INNOCENTS WIN!" : "IMPOSTER WINS!"}
+              <h2 className="font-display text-3xl font-bold mb-2 text-accent glow-text-accent">
+                THE IMPOSTER{imposters.length > 1 ? 'S' : ''} REVEALED
               </h2>
-            </motion.div>
-
-            {/* Reveal info */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="game-card"
-            >
-              <p className="text-muted-foreground mb-2">The secret word was:</p>
-              <p className="font-display text-2xl text-primary glow-text-primary">
-                {currentRound?.secret_word}
-              </p>
             </motion.div>
 
             {/* Imposters reveal */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="space-y-2"
+              transition={{ delay: 0.3 }}
+              className="space-y-3"
             >
-              <p className="text-sm text-muted-foreground">
-                The imposter{imposters.length > 1 ? 's were' : ' was'}:
-              </p>
-              {imposters.map(imp => (
-                <PlayerCard
+              {imposters.map((imp, index) => (
+                <motion.div
                   key={imp.id}
-                  username={imp.username}
-                  isImposter
-                  isRevealed
-                />
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 + index * 0.1 }}
+                >
+                  <PlayerCard
+                    username={imp.username}
+                    isImposter
+                    isRevealed
+                  />
+                </motion.div>
               ))}
             </motion.div>
 
-            {/* Scoreboard */}
+            {/* Secret word reveal */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="game-card"
+              className="game-card text-center"
             >
-              <p className="text-sm text-muted-foreground mb-3">Scoreboard</p>
-              <div className="space-y-2">
-                {players
-                  .sort((a, b) => (b.score || 0) - (a.score || 0))
-                  .map((player, index) => (
-                    <div 
-                      key={player.id}
-                      className="flex items-center justify-between py-2 border-b border-border last:border-0"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className={cn(
-                          "w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold",
-                          index === 0 && "bg-warning text-warning-foreground",
-                          index === 1 && "bg-muted text-muted-foreground",
-                          index > 1 && "bg-secondary text-secondary-foreground"
-                        )}>
-                          {index + 1}
-                        </span>
-                        <span className={player.is_imposter ? "text-accent" : ""}>
-                          {player.username}
-                        </span>
-                      </div>
-                      <span className="font-display font-bold">{player.score || 0}</span>
-                    </div>
-                  ))}
-              </div>
+              <p className="text-muted-foreground mb-2">The secret word was:</p>
+              <p className="font-display text-2xl text-primary glow-text-primary">
+                {currentRound?.secret_word}
+              </p>
             </motion.div>
 
             {/* Actions */}
@@ -441,15 +407,17 @@ export default function Game() {
                 <Home className="w-4 h-4" />
                 Leave
               </Button>
-              <Button
-                variant="hero"
-                size="lg"
-                className="flex-1"
-                onClick={handleNextRound}
-              >
-                <RotateCcw className="w-4 h-4" />
-                Next Round
-              </Button>
+              {isHost && (
+                <Button
+                  variant="hero"
+                  size="lg"
+                  className="flex-1"
+                  onClick={handleNextRound}
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Play Again
+                </Button>
+              )}
             </motion.div>
           </div>
         );
