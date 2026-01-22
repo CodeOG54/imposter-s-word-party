@@ -160,7 +160,7 @@ export default function CreateGame() {
           </motion.div>
 
           {/* Clue Time Limit */}
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.45 }}
@@ -182,7 +182,7 @@ export default function CreateGame() {
                 </Button>
               ))}
             </div>
-          </motion.div>
+          </motion.div> */}
 
           {/* Imposter Hint Toggle */}
           <motion.div
