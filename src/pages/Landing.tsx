@@ -108,7 +108,7 @@ export default function Landing() {
         transition={{ delay: 1.2 }}
         className="absolute bottom-6 text-muted-foreground text-sm"
       >
-        A party game of deception
+        A party game of deception. Created by <a href="https://github.com/kxngzero329" target="_blank" rel="noopener noreferrer">Mogamat Smith</a>.
       </motion.p>
     </div>
   );
