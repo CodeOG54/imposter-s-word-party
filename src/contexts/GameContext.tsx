@@ -556,6 +556,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
       secret_word: word,
       hint: hint
     });
+
+    // Clear chat messages for the new game
+    await supabase.from('chat_messages').delete().eq('room_id', room.id);
     
     setClues([]);
     setVotes([]);

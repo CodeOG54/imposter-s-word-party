@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
 
 interface ChatMessage {
   id: string;
@@ -44,9 +45,8 @@ export function GameChat({ roomId, playerId, playerName, players }: GameChatProp
       
       if (data) {
         setMessages(data);
-        // Only increment unread if chat is closed
-        if (!wasOpen.current && data.length > messages.length) {
-          setUnreadCount(prev => prev + (data.length - messages.length));
+        if (data.length === 0) {
+          setUnreadCount(0);
         }
       }
     };
@@ -63,6 +63,10 @@ export function GameChat({ roomId, playerId, playerName, players }: GameChatProp
           setMessages(prev => [...prev, newMsg]);
           if (!isOpen && newMsg.player_id !== playerId) {
             setUnreadCount(prev => prev + 1);
+            toast({
+              title: "New message",
+              description: `${newMsg.username}: ${newMsg.message}`,
+            });
           }
         }
       )
