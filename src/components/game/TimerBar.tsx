@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -10,32 +10,40 @@ interface TimerBarProps {
 }
 
 export function TimerBar({ duration, onComplete, paused = false, className }: TimerBarProps) {
-  const [timeLeft, setTimeLeft] = useState(duration);
+  // Initialize with duration - this runs on every mount (when key changes)
+  const [timeLeft, setTimeLeft] = useState(() => duration);
   const onCompleteRef = useRef(onComplete);
   const hasCompletedRef = useRef(false);
+  const initializedRef = useRef(false);
   
   // Keep callback ref updated
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
-  // Reset timer when duration changes
+  // Reset everything on mount - this ensures fresh state when key changes
   useEffect(() => {
     setTimeLeft(duration);
     hasCompletedRef.current = false;
-  }, [duration]);
+    initializedRef.current = true;
+    
+    return () => {
+      initializedRef.current = false;
+    };
+  }, []); // Only run on mount/unmount
 
-  // Timer countdown effect - stable dependencies
+  // Timer countdown effect
   useEffect(() => {
-    if (paused) return;
-    if (timeLeft <= 0) {
-      // Timer already at zero, trigger callback if not already done
-      if (!hasCompletedRef.current) {
-        hasCompletedRef.current = true;
-        onCompleteRef.current?.();
-      }
+    if (paused || !initializedRef.current) return;
+    
+    if (timeLeft <= 0 && !hasCompletedRef.current) {
+      hasCompletedRef.current = true;
+      // Delay callback to avoid state conflicts
+      setTimeout(() => onCompleteRef.current?.(), 50);
       return;
     }
+
+    if (timeLeft <= 0) return;
 
     const timer = setInterval(() => {
       setTimeLeft(prev => {
@@ -44,8 +52,7 @@ export function TimerBar({ duration, onComplete, paused = false, className }: Ti
           clearInterval(timer);
           if (!hasCompletedRef.current) {
             hasCompletedRef.current = true;
-            // Use setTimeout to avoid state update during render
-            setTimeout(() => onCompleteRef.current?.(), 0);
+            setTimeout(() => onCompleteRef.current?.(), 50);
           }
           return 0;
         }
@@ -54,7 +61,7 @@ export function TimerBar({ duration, onComplete, paused = false, className }: Ti
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [paused, duration]); // Depend on paused and duration (timer restarts when duration changes)
+  }, [paused, timeLeft]);
 
   const percentage = (timeLeft / duration) * 100;
 
