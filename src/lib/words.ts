@@ -1,89 +1,343 @@
-export const wordCategories: Record<string, { words: string[]; hints: string[] }> = {
+export const wordCategories: Record<
+  string,
+  { words: string[]; hints: string[] }
+> = {
   Movies: {
     words: [
-      'Titanic', 'Inception', 'Avatar', 'Frozen', 'Jaws',
-      'Gladiator', 'Matrix', 'Shrek', 'Godfather', 'Jurassic Park',
-      'Star Wars', 'Avengers', 'Joker', 'Batman', 'Spider-Man',
-      'Forrest Gump', 'Pulp Fiction', 'Fight Club', 'Interstellar', 'Gravity'
+      "Titanic",
+      "Inception",
+      "Avatar",
+      "Frozen",
+      "Jaws",
+      "Gladiator",
+      "The Matrix",
+      "Shrek",
+      "The Godfather",
+      "Jurassic Park",
+      "Star Wars",
+      "Avengers",
+      "Joker",
+      "Batman",
+      "Spider-Man",
+      "Forrest Gump",
+      "Pulp Fiction",
+      "Fight Club",
+      "Interstellar",
+      "Gravity",
+      "The Dark Knight",
+      "Dune",
+      "Oppenheimer",
+      "Toy Story",
+      "Iron Man",
+      "Mad Max",
+      "The Lion King",
+      "Alien",
+      "Parasite",
+      "Whiplash",
     ],
-    hints: ['Entertainment', 'Cinema', 'Film', 'Hollywood', 'Blockbuster']
+    hints: [
+      "Iconic scenes",
+      "Famous characters",
+      "Memorable soundtrack",
+      "Big-budget production",
+      "Quotable lines",
+      "Award-winning",
+      "Cultural impact",
+    ],
   },
+
   Places: {
     words: [
-      'Paris', 'Tokyo', 'New York', 'London', 'Sydney',
-      'Rome', 'Dubai', 'Singapore', 'Barcelona', 'Amsterdam',
-      'Las Vegas', 'Hawaii', 'Maldives', 'Venice', 'Cairo',
-      'Moscow', 'Rio', 'Miami', 'Berlin', 'Toronto'
+      "Paris",
+      "Tokyo",
+      "New York",
+      "London",
+      "Sydney",
+      "Rome",
+      "Dubai",
+      "Singapore",
+      "Barcelona",
+      "Amsterdam",
+      "Las Vegas",
+      "Hawaii",
+      "Maldives",
+      "Venice",
+      "Cairo",
+      "Moscow",
+      "Rio",
+      "Miami",
+      "Berlin",
+      "Toronto",
+      "Istanbul",
+      "Cape Town",
+      "Bangkok",
+      "Seoul",
+      "Los Angeles",
     ],
-    hints: ['Location', 'Geography', 'Destination', 'Travel', 'City']
+    hints: [
+      "Tourist hotspot",
+      "Famous landmarks",
+      "Different cultures",
+      "Travel destination",
+      "City life",
+      "Popular photos",
+      "Recognizable skyline",
+    ],
   },
+
   Objects: {
     words: [
-      'Umbrella', 'Telescope', 'Scissors', 'Candle', 'Mirror',
-      'Clock', 'Lamp', 'Piano', 'Guitar', 'Camera',
-      'Bicycle', 'Skateboard', 'Surfboard', 'Microphone', 'Headphones',
-      'Sunglasses', 'Wallet', 'Backpack', 'Laptop', 'Phone'
+      "Umbrella",
+      "Telescope",
+      "Scissors",
+      "Candle",
+      "Mirror",
+      "Clock",
+      "Lamp",
+      "Piano",
+      "Guitar",
+      "Camera",
+      "Bicycle",
+      "Skateboard",
+      "Surfboard",
+      "Microphone",
+      "Headphones",
+      "Sunglasses",
+      "Wallet",
+      "Backpack",
+      "Laptop",
+      "Phone",
+      "Watch",
+      "Key",
+      "Flashlight",
+      "Drone",
+      "Tripod",
     ],
-    hints: ['Thing', 'Item', 'Tool', 'Gadget', 'Equipment']
+    hints: [
+      "Used daily",
+      "Can be held",
+      "Common household item",
+      "Useful tool",
+      "Personal item",
+      "Portable",
+      "Functional design",
+    ],
   },
+
   Food: {
     words: [
-      'Pizza', 'Sushi', 'Burger', 'Taco', 'Pasta',
-      'Croissant', 'Ramen', 'Steak', 'Salad', 'Pancakes',
-      'Ice Cream', 'Chocolate', 'Popcorn', 'Donut', 'Waffles',
-      'Curry', 'Burrito', 'Dim Sum', 'Fondue', 'Paella'
+      "Pizza",
+      "Sushi",
+      "Burger",
+      "Taco",
+      "Pasta",
+      "Croissant",
+      "Ramen",
+      "Steak",
+      "Salad",
+      "Pancakes",
+      "Ice Cream",
+      "Chocolate",
+      "Popcorn",
+      "Donut",
+      "Waffles",
+      "Curry",
+      "Burrito",
+      "Dim Sum",
+      "Fondue",
+      "Paella",
+      "Lasagna",
+      "Hotdog",
+      "Fried Chicken",
+      "Risotto",
+      "Nachos",
     ],
-    hints: ['Cuisine', 'Meal', 'Dish', 'Snack', 'Delicacy']
+    hints: [
+      "Comfort food",
+      "Popular worldwide",
+      "Served hot or cold",
+      "Often shared",
+      "Street food or restaurant",
+      "Cravings",
+      "Different cuisines",
+    ],
   },
+
   Games: {
     words: [
-      'Chess', 'Monopoly', 'Poker', 'Tetris', 'Mario',
-      'Minecraft', 'Fortnite', 'Soccer', 'Basketball', 'Tennis',
-      'Golf', 'Bowling', 'Darts', 'Pool', 'Jenga',
-      'Scrabble', 'Uno', 'Twister', 'Charades', 'Pictionary'
+      "Chess",
+      "Monopoly",
+      "Poker",
+      "Tetris",
+      "Mario",
+      "Minecraft",
+      "Fortnite",
+      "Soccer",
+      "Basketball",
+      "Tennis",
+      "Golf",
+      "Bowling",
+      "Darts",
+      "Pool",
+      "Jenga",
+      "Scrabble",
+      "Uno",
+      "Twister",
+      "Charades",
+      "Pictionary",
+      "Call of Duty",
+      "FIFA",
+      "Among Us",
+      "Valorant",
+      "League of Legends",
     ],
-    hints: ['Recreation', 'Sport', 'Activity', 'Competition', 'Entertainment']
+    hints: [
+      "Competitive",
+      "Rules-based",
+      "Played with others",
+      "Skill or strategy",
+      "Casual or intense",
+      "Win or lose",
+      "Replayable",
+    ],
   },
+
   Animals: {
     words: [
-      'Elephant', 'Penguin', 'Dolphin', 'Tiger', 'Giraffe',
-      'Kangaroo', 'Octopus', 'Flamingo', 'Peacock', 'Panda',
-      'Koala', 'Gorilla', 'Cheetah', 'Owl', 'Eagle',
-      'Shark', 'Whale', 'Jellyfish', 'Butterfly', 'Chameleon'
+      "Elephant",
+      "Penguin",
+      "Dolphin",
+      "Tiger",
+      "Giraffe",
+      "Kangaroo",
+      "Octopus",
+      "Flamingo",
+      "Peacock",
+      "Panda",
+      "Koala",
+      "Gorilla",
+      "Cheetah",
+      "Owl",
+      "Eagle",
+      "Shark",
+      "Whale",
+      "Jellyfish",
+      "Butterfly",
+      "Chameleon",
+      "Wolf",
+      "Fox",
+      "Snake",
+      "Bear",
+      "Crocodile",
     ],
-    hints: ['Creature', 'Wildlife', 'Nature', 'Living thing', 'Species']
+    hints: [
+      "Found in nature",
+      "Wild or domesticated",
+      "Different habitats",
+      "Recognizable traits",
+      "Moves uniquely",
+      "Predator or prey",
+      "Animal behavior",
+    ],
   },
+
   Professions: {
     words: [
-      'Doctor', 'Astronaut', 'Chef', 'Pilot', 'Detective',
-      'Firefighter', 'Teacher', 'Scientist', 'Artist', 'Musician',
-      'Actor', 'Photographer', 'Architect', 'Engineer', 'Lawyer',
-      'Nurse', 'Veterinarian', 'Journalist', 'Athlete', 'Dancer'
+      "Doctor",
+      "Astronaut",
+      "Chef",
+      "Pilot",
+      "Detective",
+      "Firefighter",
+      "Teacher",
+      "Scientist",
+      "Artist",
+      "Musician",
+      "Actor",
+      "Photographer",
+      "Architect",
+      "Engineer",
+      "Lawyer",
+      "Nurse",
+      "Veterinarian",
+      "Journalist",
+      "Athlete",
+      "Dancer",
+      "Programmer",
+      "Designer",
+      "Electrician",
+      "Mechanic",
+      "Psychologist",
     ],
-    hints: ['Career', 'Occupation', 'Job', 'Work', 'Profession']
+    hints: [
+      "Requires training",
+      "Career path",
+      "Daily responsibilities",
+      "Special skills",
+      "Professional environment",
+      "Helps others",
+      "Creative or technical",
+    ],
   },
+
   Technology: {
     words: [
-      'Robot', 'Drone', 'Satellite', 'Laser', 'Hologram',
-      'Virtual Reality', 'Cryptocurrency', 'Algorithm', 'Firewall', 'Cloud',
-      'Bluetooth', 'WiFi', 'GPS', 'Touchscreen', '3D Printer',
-      'Electric Car', 'Solar Panel', 'Smart Watch', 'Alexa', 'Tesla'
+      "Robot",
+      "Drone",
+      "Satellite",
+      "Laser",
+      "Hologram",
+      "Virtual Reality",
+      "Cryptocurrency",
+      "Algorithm",
+      "Firewall",
+      "Cloud",
+      "Bluetooth",
+      "WiFi",
+      "GPS",
+      "Touchscreen",
+      "3D Printer",
+      "Electric Car",
+      "Solar Panel",
+      "Smart Watch",
+      "AI",
+      "Tesla",
+      "Neural Network",
+      "Blockchain",
+      "Smartphone",
+      "Face ID",
+      "Automation",
     ],
-    hints: ['Innovation', 'Digital', 'Future', 'Science', 'Invention']
-  }
+    hints: [
+      "Modern innovation",
+      "Digital systems",
+      "Improves efficiency",
+      "Future-focused",
+      "Connected devices",
+      "High-tech",
+      "Rapidly evolving",
+    ],
+  },
 };
 
-export function getRandomWord(categories: string[]): { word: string; hint: string; category: string } {
-  const validCategories = categories.filter(cat => wordCategories[cat]);
+export function getRandomWord(categories: string[]): {
+  word: string;
+  hint: string;
+  category: string;
+} {
+  const validCategories = categories.filter((cat) => wordCategories[cat]);
   if (validCategories.length === 0) {
-    validCategories.push('Objects'); // fallback
+    validCategories.push("Objects"); // fallback
   }
-  
-  const randomCategory = validCategories[Math.floor(Math.random() * validCategories.length)];
+
+  const randomCategory =
+    validCategories[Math.floor(Math.random() * validCategories.length)];
   const categoryData = wordCategories[randomCategory];
-  const randomWord = categoryData.words[Math.floor(Math.random() * categoryData.words.length)];
-  const randomHint = categoryData.hints[Math.floor(Math.random() * categoryData.hints.length)];
-  
+  const randomWord =
+    categoryData.words[Math.floor(Math.random() * categoryData.words.length)];
+  const randomHint =
+    categoryData.hints[Math.floor(Math.random() * categoryData.hints.length)];
+
   return { word: randomWord, hint: randomHint, category: randomCategory };
 }
 
