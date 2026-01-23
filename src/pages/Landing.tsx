@@ -20,24 +20,24 @@ export default function Landing() {
   return (
     <div className="min-h-screen animated-bg flex flex-col items-center justify-center p-4 overflow-hidden">
       {/* Animated background particles */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
+      <div className="fixed inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        {[...Array(15)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-1 h-1 bg-primary/30 rounded-full"
-            initial={{
-              x: Math.random() * window.innerWidth,
-              y: Math.random() * window.innerHeight,
+            className="absolute w-1 h-1 bg-primary/20 rounded-full"
+            style={{
+              left: `${(i * 7) % 100}%`,
+              top: `${100 + (i * 13) % 30}%`,
             }}
             animate={{
-              y: [null, Math.random() * -500],
-              opacity: [0, 1, 0],
+              y: [0, -800],
+              opacity: [0, 0.8, 0],
             }}
             transition={{
-              duration: Math.random() * 10 + 10,
+              duration: 15 + (i % 5) * 2,
               repeat: Infinity,
               ease: 'linear',
-              delay: Math.random() * 5,
+              delay: i * 0.8,
             }}
           />
         ))}
