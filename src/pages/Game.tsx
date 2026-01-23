@@ -8,6 +8,7 @@ import { PlayerCard } from '@/components/game/PlayerCard';
 import { RoleRevealCard } from '@/components/game/RoleRevealCard';
 import { TimerBar } from '@/components/game/TimerBar';
 import { GameChat } from '@/components/game/GameChat';
+import { GameLoader } from '@/components/game/GameLoader';
 import { useGame } from '@/contexts/GameContext';
 import { cn } from '@/lib/utils';
 import {
@@ -432,16 +433,7 @@ export default function Game() {
   const { loading } = useGame();
 
   if (loading || !room || !currentPlayer) {
-    return (
-      <div className="min-h-screen animated-bg flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin-slow inline-block mb-4">
-            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full" />
-          </div>
-          <p className="text-muted-foreground">Loading game...</p>
-        </div>
-      </div>
-    );
+    return <GameLoader message="Loading game..." />;
   }
 
   return (
