@@ -135,7 +135,7 @@ export function GameChat({
       >
         <MessageCircle className="w-6 h-6" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-6 h-6 bg-accent text-accent-foreground rounded-full text-xs font-bold flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-destructive text-destructive-foreground rounded-full text-xs font-bold flex items-center justify-center pointer-events-none">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
