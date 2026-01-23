@@ -170,9 +170,15 @@ export function GameChat({
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {messages.length === 0 ? (
-                <div className="text-center text-muted-foreground text-sm py-8">
-                  No messages yet. Start the discussion!
-                </div>
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex flex-col items-center justify-center text-center text-muted-foreground text-sm py-8 h-full"
+                >
+                  <MessageCircle className="w-8 h-8 mb-2 opacity-30" />
+                  <p>No messages yet</p>
+                  <p className="text-xs mt-1 opacity-70">Start the discussion!</p>
+                </motion.div>
               ) : (
                 messages.map((msg) => (
                   <motion.div

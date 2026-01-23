@@ -341,11 +341,16 @@ export default function Game() {
             <motion.div
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: "spring", damping: 12, stiffness: 100 }}
               className="text-center"
             >
-              <div className="inline-block p-6 rounded-full mb-4 bg-accent/20 glow-accent">
+              <motion.div 
+                className="inline-block p-6 rounded-full mb-4 bg-accent/20 glow-accent"
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
                 <Skull className="w-16 h-16 text-accent" />
-              </div>
+              </motion.div>
               
               <h2 className="font-display text-3xl font-bold mb-2 text-accent glow-text-accent">
                 THE IMPOSTER{imposters.length > 1 ? 'S' : ''} REVEALED

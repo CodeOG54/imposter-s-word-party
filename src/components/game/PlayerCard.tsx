@@ -32,12 +32,18 @@ export function PlayerCard({
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      whileHover={onVote && isAlive ? { scale: 1.05 } : undefined}
-      whileTap={onVote && isAlive ? { scale: 0.95 } : undefined}
+      animate={{ 
+        opacity: 1, 
+        scale: isRevealed && isImposter ? [1, 1.02, 1] : 1
+      }}
+      transition={isRevealed && isImposter ? {
+        scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+      } : undefined}
+      whileHover={onVote && isAlive ? { scale: 1.03 } : undefined}
+      whileTap={onVote && isAlive ? { scale: 0.97 } : undefined}
       onClick={onVote && isAlive ? onVote : undefined}
       className={cn(
-        "player-card relative cursor-default",
+        "player-card relative cursor-default transition-colors",
         !isAlive && "opacity-50",
         isCurrentTurn && "border-primary glow-primary",
         isRevealed && isImposter && "border-accent glow-accent imposter",
