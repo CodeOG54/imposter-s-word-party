@@ -50,13 +50,22 @@ export default function Game() {
   const [showTimeoutDialog, setShowTimeoutDialog] = useState(false);
   const [clueTimerKey, setClueTimerKey] = useState(0); // Key to reset clue timer for all players
   const [votingTimerKey, setVotingTimerKey] = useState(0); // Key to reset voting timer for all players
+  const [resultsSecretWord, setResultsSecretWord] = useState<string | null>(null); // Capture word for results screen
 
-  // Sync phase with room status
+  // Sync phase with room status and capture secret word when entering results
   useEffect(() => {
     if (room?.status) {
+      // Capture the secret word when entering results phase (before it changes)
+      if (room.status === 'results' && currentRound?.secret_word && !resultsSecretWord) {
+        setResultsSecretWord(currentRound.secret_word);
+      }
+      // Clear the captured word when leaving results phase
+      if (room.status !== 'results' && resultsSecretWord) {
+        setResultsSecretWord(null);
+      }
       setPhase(room.status as GamePhase);
     }
-  }, [room?.status]);
+  }, [room?.status, currentRound?.secret_word, resultsSecretWord]);
 
   // Reset states on new round or when phase changes
   useEffect(() => {
@@ -390,7 +399,7 @@ export default function Game() {
             >
               <p className="text-muted-foreground mb-2">The secret word was:</p>
               <p className="font-display text-2xl text-primary glow-text-primary">
-                {currentRound?.secret_word}
+                {resultsSecretWord || currentRound?.secret_word}
               </p>
             </motion.div>
 
